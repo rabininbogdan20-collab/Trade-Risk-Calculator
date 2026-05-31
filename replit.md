@@ -1,45 +1,55 @@
-# [Project name]
+# Trade Risk Calculator
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A mobile-first calculator for traders to size positions, calculate dollar risk, and evaluate risk/reward before entering a trade.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/trade-risk-calc run dev` — start the calculator (served via shared proxy at `/`)
+- `pnpm --filter @workspace/trade-risk-calc run typecheck` — typecheck the frontend
+- `pnpm run typecheck` — full typecheck across all workspace packages
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React 18 + Vite, Tailwind CSS v4, shadcn/ui
+- Forms: react-hook-form + Zod
+- Routing: wouter
+- No backend — all calculation logic runs in the browser
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/trade-risk-calc/src/components/Calculator.tsx` — all calculator logic and UI
+- `artifacts/trade-risk-calc/src/App.tsx` — page shell, "Как пользоваться" section, disclaimer
+- `artifacts/trade-risk-calc/src/index.css` — dark theme, Space Grotesk font, CSS custom properties
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Pure frontend: no API, no database. All math is client-side JS — no latency, no auth needed.
+- Dark mode forced on page load (`document.documentElement.classList.add("dark")`) — no toggle by design.
+- Currency selector is UI-only: it just changes the displayed symbol, not the calculation.
+- Direction validation (LONG/SHORT) runs on every field change after the first submit and on direction toggle — results are hidden when the setup is invalid.
+- shadcn/ui component files are left in full (scaffold default) — they add no bundle cost if unused, and make future additions easy.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **LONG / SHORT selector** with Russian direction validation warnings
+- **5 inputs**: account balance, risk %, entry price, stop loss, take profit
+- **Currency selector**: $ / € / ₽ (symbol only, no conversion)
+- **Risk level warning**: Нормальный / Повышенный / Слишком высокий риск
+- **4 results**: position size, risk/reward ratio, dollar risk, potential profit
+- **R:R visual bar**: proportional red/green gauge
+- **"Как пользоваться"** instructions and legal disclaimer below the card
+- Live recalculation on every field change after first submit
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Interface language: Russian, except trading terms (Risk %, Stop Loss, Take Profit) stay in English.
+- Dark theme only.
+- No new features unless explicitly requested: no trade log, share button, breakeven, lot size, fees, or pre-calc mode.
+- Mobile-first layout; compact vertical spacing.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- `useEffect` for live recalculation must use early-return pattern (`if (!hasCalculated) return;`) to satisfy TypeScript's "not all code paths return a value" rule.
+- Currency prefix in the balance input uses a `<span>` positioned absolutely — if padding changes, verify the symbol doesn't overlap the number.
+- The shared proxy routes `/` to the trade-risk-calc Vite dev server. Do not hard-code ports.

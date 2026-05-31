@@ -114,10 +114,9 @@ export function Calculator() {
 
   // Live recalculation after first submit
   useEffect(() => {
-    if (hasCalculated) {
-      const sub = form.watch(() => form.handleSubmit(onSubmit)());
-      return () => sub.unsubscribe();
-    }
+    if (!hasCalculated) return;
+    const sub = form.watch(() => form.handleSubmit(onSubmit)());
+    return () => sub.unsubscribe();
   }, [hasCalculated, form.watch, form.handleSubmit]);
 
   return (
