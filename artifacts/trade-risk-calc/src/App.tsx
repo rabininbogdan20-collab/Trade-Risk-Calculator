@@ -10,7 +10,7 @@ const queryClient = new QueryClient();
 
 function Home() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 selection:bg-primary selection:text-primary-foreground">
+    <div className="min-h-screen w-full flex items-start sm:items-center justify-center p-3 sm:p-4 selection:bg-primary selection:text-primary-foreground">
       <Calculator />
     </div>
   );
