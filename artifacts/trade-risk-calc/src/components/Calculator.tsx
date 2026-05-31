@@ -51,6 +51,8 @@ export function Calculator() {
     },
   });
 
+  const riskPct = form.watch("riskPercentage");
+
   const onSubmit = (data: FormValues) => {
     const dollarRisk = data.accountBalance * (data.riskPercentage / 100);
     const riskPerShare = Math.abs(data.entryPrice - data.stopLoss);
@@ -103,7 +105,7 @@ export function Calculator() {
                 name="accountBalance"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Account Balance</FormLabel>
+                    <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Баланс счёта</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -131,6 +133,26 @@ export function Calculator() {
                 )}
               />
             </div>
+
+            {riskPct > 0 && (
+              <div
+                data-testid="risk-warning"
+                className={cn(
+                  "text-xs font-semibold px-3 py-2 rounded-lg border",
+                  riskPct <= 1
+                    ? "text-green-400 bg-green-500/10 border-green-500/20"
+                    : riskPct <= 2
+                    ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
+                    : "text-destructive bg-destructive/10 border-destructive/20"
+                )}
+              >
+                {riskPct <= 1
+                  ? "Нормальный риск"
+                  : riskPct <= 2
+                  ? "Повышенный риск"
+                  : "Слишком высокий риск — уменьши позицию"}
+              </div>
+            )}
 
             <div className="space-y-4 pt-2">
               <FormField
@@ -172,7 +194,7 @@ export function Calculator() {
                   name="takeProfit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase tracking-wider text-green-500 font-semibold">Take Profit</FormLabel>
+                      <FormLabel className="text-xs uppercase tracking-wider text-green-500 font-semibold" translate="no">Take Profit</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Crosshair className="absolute left-3 top-2.5 h-4 w-4 text-green-500" />
@@ -207,7 +229,7 @@ export function Calculator() {
                 <p className="text-3xl font-mono font-bold text-foreground" data-testid="result-position-size">
                   {results.positionSize.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Shares / Units</p>
+                <p className="text-xs text-muted-foreground mt-1">единиц актива</p>
               </div>
               
               <div>
