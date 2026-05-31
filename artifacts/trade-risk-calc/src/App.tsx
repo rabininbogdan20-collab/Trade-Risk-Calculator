@@ -31,6 +31,9 @@ function Home() {
           ))}
         </ol>
       </div>
+      <p className="w-full max-w-md text-center text-[10px] text-muted-foreground/50 leading-snug px-2 pb-1" data-testid="disclaimer">
+        Не является финансовой рекомендацией. Калькулятор помогает рассчитать риск, но решение о сделке принимаете вы.
+      </p>
     </div>
   );
 }
