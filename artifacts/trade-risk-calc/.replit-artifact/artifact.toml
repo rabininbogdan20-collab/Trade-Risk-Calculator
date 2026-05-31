@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Trade Risk Calculator"
+version = "1.0.0"
+id = "artifacts/trade-risk-calc"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25564
+
+[services.development]
+run = "pnpm --filter @workspace/trade-risk-calc run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/trade-risk-calc", "run", "build" ]
+publicDir = "artifacts/trade-risk-calc/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25564"
+BASE_PATH = "/"
