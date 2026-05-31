@@ -10,8 +10,27 @@ const queryClient = new QueryClient();
 
 function Home() {
   return (
-    <div className="min-h-screen w-full flex items-start sm:items-center justify-center p-3 sm:p-4 selection:bg-primary selection:text-primary-foreground">
+    <div className="min-h-screen w-full flex flex-col items-center justify-start sm:justify-center gap-3 p-3 sm:p-4 selection:bg-primary selection:text-primary-foreground">
       <Calculator />
+      <div className="w-full max-w-md rounded-xl border border-border bg-card/30 px-4 py-3" data-testid="how-to-use">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Как пользоваться</p>
+        <ol className="space-y-1.5 list-none">
+          {[
+            "Выберите LONG или SHORT.",
+            "Укажите баланс счёта и риск в процентах.",
+            "Введите цену входа, Stop Loss и Take Profit.",
+            "Калькулятор покажет размер позиции, сумму риска и соотношение риск/прибыль.",
+            "Риск выше 2% считается повышенным — уменьшите позицию.",
+          ].map((text, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="shrink-0 w-4 h-4 mt-px rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center leading-none">
+                {i + 1}
+              </span>
+              <span className="text-[11px] text-muted-foreground leading-snug">{text}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </div>
   );
 }
