@@ -13,10 +13,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Percent, Target, TrendingDown, Crosshair, RefreshCw, Calculator as CalcIcon, AlertTriangle } from "lucide-react";
+import { Percent, Target, TrendingDown, Crosshair, RefreshCw, Calculator as CalcIcon, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TradeDirection = "LONG" | "SHORT";
+type Currency = "$" | "€" | "₽";
+
+const CURRENCIES: Currency[] = ["$", "€", "₽"];
 
 const formSchema = z.object({
   accountBalance: z.coerce.number().positive("Must be positive"),
@@ -46,6 +49,7 @@ function getDirectionError(direction: TradeDirection, entry: number, stop: numbe
 
 export function Calculator() {
   const [direction, setDirection] = useState<TradeDirection>("LONG");
+  const [currency, setCurrency] = useState<Currency>("$");
   const [results, setResults] = useState<{
     dollarRisk: number;
     positionSize: number;
@@ -96,14 +100,12 @@ export function Calculator() {
     setHasCalculated(false);
   };
 
-  // Re-validate direction when direction toggle changes
   useEffect(() => {
     if (hasCalculated) {
       form.handleSubmit(onSubmit)();
     }
   }, [direction]);
 
-  // Live updates after first calculation
   useEffect(() => {
     if (hasCalculated) {
       const subscription = form.watch(() => {
@@ -165,11 +167,34 @@ export function Calculator() {
                 name="accountBalance"
                 render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Баланс счёта</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Баланс счёта</FormLabel>
+                      {/* Currency selector */}
+                      <div className="flex gap-0.5" data-testid="currency-selector">
+                        {CURRENCIES.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            data-testid={`button-currency-${c}`}
+                            onClick={() => setCurrency(c)}
+                            className={cn(
+                              "w-5 h-5 rounded text-[9px] font-bold transition-colors",
+                              currency === c
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <FormControl>
                       <div className="relative">
-                        <DollarSign className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                        <Input type="number" step="any" className="pl-8 font-mono text-base h-9" data-testid="input-account-balance" {...field} />
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-mono text-muted-foreground select-none">
+                          {currency}
+                        </span>
+                        <Input type="number" step="any" className="pl-7 font-mono text-base h-9" data-testid="input-account-balance" {...field} />
                       </div>
                     </FormControl>
                     <FormMessage className="text-[10px]" />
@@ -316,14 +341,14 @@ export function Calculator() {
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-destructive font-semibold mb-0.5">Вы рискуете</p>
                 <p className="text-xl font-mono font-bold text-destructive leading-tight" data-testid="result-dollar-risk">
-                  ${results.dollarRisk.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {currency}{results.dollarRisk.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
 
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-green-500 font-semibold mb-0.5">Потенциальная прибыль</p>
                 <p className="text-xl font-mono font-bold text-green-500 leading-tight" data-testid="result-potential-profit">
-                  ${results.potentialProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {currency}{results.potentialProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
