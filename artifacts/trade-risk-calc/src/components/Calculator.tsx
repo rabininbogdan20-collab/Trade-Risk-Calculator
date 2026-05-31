@@ -34,7 +34,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-function getDirectionError(direction: TradeDirection, entry: number, stop: number, tp: number): string | null {
+function getDirectionError(
+  direction: TradeDirection,
+  entry: number,
+  stop: number,
+  tp: number
+): string | null {
   if (direction === "LONG") {
     if (stop >= entry || tp <= entry) {
       return "Для LONG стоп должен быть ниже входа, а Take Profit выше входа";
@@ -100,18 +105,18 @@ export function Calculator() {
     setHasCalculated(false);
   };
 
+  // Re-run when direction toggles after first calculation
   useEffect(() => {
     if (hasCalculated) {
       form.handleSubmit(onSubmit)();
     }
   }, [direction]);
 
+  // Live recalculation after first submit
   useEffect(() => {
     if (hasCalculated) {
-      const subscription = form.watch(() => {
-        form.handleSubmit(onSubmit)();
-      });
-      return () => subscription.unsubscribe();
+      const sub = form.watch(() => form.handleSubmit(onSubmit)());
+      return () => sub.unsubscribe();
     }
   }, [hasCalculated, form.watch, form.handleSubmit]);
 
@@ -130,7 +135,7 @@ export function Calculator() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
 
-            {/* Direction selector */}
+            {/* ── Direction ── */}
             <div className="flex gap-2" data-testid="direction-selector">
               <button
                 type="button"
@@ -140,7 +145,7 @@ export function Calculator() {
                   "flex-1 h-9 rounded-lg text-sm font-bold tracking-wider border transition-colors",
                   direction === "LONG"
                     ? "bg-green-500/20 border-green-500 text-green-400"
-                    : "bg-transparent border-border text-muted-foreground hover:border-green-500/50 hover:text-green-500/70"
+                    : "bg-transparent border-border text-muted-foreground hover:border-green-500/40 hover:text-green-500/60"
                 )}
               >
                 LONG
@@ -153,48 +158,60 @@ export function Calculator() {
                   "flex-1 h-9 rounded-lg text-sm font-bold tracking-wider border transition-colors",
                   direction === "SHORT"
                     ? "bg-destructive/20 border-destructive text-destructive"
-                    : "bg-transparent border-border text-muted-foreground hover:border-destructive/50 hover:text-destructive/70"
+                    : "bg-transparent border-border text-muted-foreground hover:border-destructive/40 hover:text-destructive/60"
                 )}
               >
                 SHORT
               </button>
             </div>
 
-            {/* Balance + Risk % */}
+            {/* ── Currency selector (full-width row) ── */}
+            <div className="flex items-center gap-2" data-testid="currency-selector">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold shrink-0">
+                Валюта
+              </span>
+              <div className="flex gap-1">
+                {CURRENCIES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    data-testid={`button-currency-${c}`}
+                    onClick={() => setCurrency(c)}
+                    className={cn(
+                      "h-6 min-w-[1.75rem] px-1.5 rounded text-xs font-bold transition-colors",
+                      currency === c
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                    )}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Balance + Risk % ── */}
             <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="accountBalance"
                 render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Баланс счёта</FormLabel>
-                      {/* Currency selector */}
-                      <div className="flex gap-0.5" data-testid="currency-selector">
-                        {CURRENCIES.map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            data-testid={`button-currency-${c}`}
-                            onClick={() => setCurrency(c)}
-                            className={cn(
-                              "w-5 h-5 rounded text-[9px] font-bold transition-colors",
-                              currency === c
-                                ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:text-foreground"
-                            )}
-                          >
-                            {c}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">
+                      Баланс счёта
+                    </FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-mono text-muted-foreground select-none">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-mono text-muted-foreground select-none leading-none">
                           {currency}
                         </span>
-                        <Input type="number" step="any" className="pl-7 font-mono text-base h-9" data-testid="input-account-balance" {...field} />
+                        <Input
+                          type="number"
+                          step="any"
+                          className="pl-7 font-mono text-base h-9"
+                          data-testid="input-account-balance"
+                          {...field}
+                        />
                       </div>
                     </FormControl>
                     <FormMessage className="text-[10px]" />
@@ -206,11 +223,19 @@ export function Calculator() {
                 name="riskPercentage"
                 render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Risk %</FormLabel>
+                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">
+                      Risk %
+                    </FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Percent className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                        <Input type="number" step="any" className="pr-8 font-mono text-base h-9" data-testid="input-risk-percentage" {...field} />
+                        <Input
+                          type="number"
+                          step="any"
+                          className="pr-8 font-mono text-base h-9"
+                          data-testid="input-risk-percentage"
+                          {...field}
+                        />
                       </div>
                     </FormControl>
                     <FormMessage className="text-[10px]" />
@@ -219,7 +244,7 @@ export function Calculator() {
               />
             </div>
 
-            {/* Risk warning */}
+            {/* ── Risk level warning ── */}
             {riskPct > 0 && (
               <div
                 data-testid="risk-warning"
@@ -240,17 +265,25 @@ export function Calculator() {
               </div>
             )}
 
-            {/* Entry Price */}
+            {/* ── Entry Price ── */}
             <FormField
               control={form.control}
               name="entryPrice"
               render={({ field }) => (
                 <FormItem className="space-y-1">
-                  <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Цена входа</FormLabel>
+                  <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">
+                    Цена входа
+                  </FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Target className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-primary" />
-                      <Input type="number" step="any" className="pl-8 font-mono text-base h-9 bg-background/50 border-primary/20 focus-visible:border-primary" data-testid="input-entry-price" {...field} />
+                      <Input
+                        type="number"
+                        step="any"
+                        className="pl-8 font-mono text-base h-9 bg-background/50 border-primary/20 focus-visible:border-primary"
+                        data-testid="input-entry-price"
+                        {...field}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage className="text-[10px]" />
@@ -258,18 +291,26 @@ export function Calculator() {
               )}
             />
 
-            {/* Stop Loss + Take Profit */}
+            {/* ── Stop Loss + Take Profit ── */}
             <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="stopLoss"
                 render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] uppercase tracking-wider text-destructive font-semibold">Stop Loss</FormLabel>
+                    <FormLabel className="text-[10px] uppercase tracking-wider text-destructive font-semibold block">
+                      Stop Loss
+                    </FormLabel>
                     <FormControl>
                       <div className="relative">
                         <TrendingDown className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-destructive" />
-                        <Input type="number" step="any" className="pl-8 font-mono text-base h-9 border-destructive/20 focus-visible:ring-destructive" data-testid="input-stop-loss" {...field} />
+                        <Input
+                          type="number"
+                          step="any"
+                          className="pl-8 font-mono text-base h-9 border-destructive/20 focus-visible:ring-destructive"
+                          data-testid="input-stop-loss"
+                          {...field}
+                        />
                       </div>
                     </FormControl>
                     <FormMessage className="text-[10px]" />
@@ -281,11 +322,22 @@ export function Calculator() {
                 name="takeProfit"
                 render={({ field }) => (
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-[10px] uppercase tracking-wider text-green-500 font-semibold" translate="no">Take Profit</FormLabel>
+                    <FormLabel
+                      className="text-[10px] uppercase tracking-wider text-green-500 font-semibold block"
+                      translate="no"
+                    >
+                      Take Profit
+                    </FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Crosshair className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-green-500" />
-                        <Input type="number" step="any" className="pl-8 font-mono text-base h-9 border-green-500/20 focus-visible:ring-green-500" data-testid="input-take-profit" {...field} />
+                        <Input
+                          type="number"
+                          step="any"
+                          className="pl-8 font-mono text-base h-9 border-green-500/20 focus-visible:ring-green-500"
+                          data-testid="input-take-profit"
+                          {...field}
+                        />
                       </div>
                     </FormControl>
                     <FormMessage className="text-[10px]" />
@@ -294,66 +346,106 @@ export function Calculator() {
               />
             </div>
 
-            {/* Buttons */}
+            {/* ── Action buttons ── */}
             <div className="flex gap-2 pt-1">
-              <Button type="submit" size="sm" className="w-full font-bold tracking-wide shadow-primary/20 shadow-lg h-10 text-sm" data-testid="button-calculate">
+              <Button
+                type="submit"
+                size="sm"
+                className="w-full font-bold tracking-wide h-10 text-sm shadow-primary/20 shadow-lg"
+                data-testid="button-calculate"
+              >
                 РАССЧИТАТЬ
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={handleReset} className="h-10 px-3" data-testid="button-reset">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="h-10 px-3 shrink-0"
+                data-testid="button-reset"
+              >
                 <RefreshCw className="w-4 h-4" />
               </Button>
             </div>
           </form>
         </Form>
 
-        {/* Direction mismatch warning */}
+        {/* ── Direction error ── */}
         {directionError && (
           <div
             data-testid="direction-error"
-            className="mt-4 flex items-start gap-2 px-3 py-2.5 rounded-lg border text-destructive bg-destructive/10 border-destructive/30 animate-in fade-in duration-300"
+            className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg border text-destructive bg-destructive/10 border-destructive/30 animate-in fade-in duration-300"
           >
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
             <p className="text-[11px] font-semibold leading-snug">{directionError}</p>
           </div>
         )}
 
-        {/* Results */}
+        {/* ── Results ── */}
         {results && !directionError && (
-          <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="h-px w-full bg-border" />
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Размер позиции</p>
-                <p className="text-xl font-mono font-bold text-foreground leading-tight" data-testid="result-position-size">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">
+                  Размер позиции
+                </p>
+                <p
+                  className="text-xl font-mono font-bold text-foreground leading-tight"
+                  data-testid="result-position-size"
+                >
                   {results.positionSize.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">единиц актива</p>
               </div>
 
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Риск / Прибыль</p>
-                <p className="text-xl font-mono font-bold text-primary leading-tight" data-testid="result-risk-reward">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">
+                  Риск / Прибыль
+                </p>
+                <p
+                  className="text-xl font-mono font-bold text-primary leading-tight"
+                  data-testid="result-risk-reward"
+                >
                   1 : {results.riskReward.toFixed(2)}
                 </p>
               </div>
 
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-destructive font-semibold mb-0.5">Вы рискуете</p>
-                <p className="text-xl font-mono font-bold text-destructive leading-tight" data-testid="result-dollar-risk">
-                  {currency}{results.dollarRisk.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] uppercase tracking-wider text-destructive font-semibold mb-0.5">
+                  Вы рискуете
+                </p>
+                <p
+                  className="text-xl font-mono font-bold text-destructive leading-tight"
+                  data-testid="result-dollar-risk"
+                >
+                  {currency}
+                  {results.dollarRisk.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
 
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-green-500 font-semibold mb-0.5">Потенциальная прибыль</p>
-                <p className="text-xl font-mono font-bold text-green-500 leading-tight" data-testid="result-potential-profit">
-                  {currency}{results.potentialProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <p className="text-[10px] uppercase tracking-wider text-green-500 font-semibold mb-0.5">
+                  Потенц. прибыль
+                </p>
+                <p
+                  className="text-xl font-mono font-bold text-green-500 leading-tight"
+                  data-testid="result-potential-profit"
+                >
+                  {currency}
+                  {results.potentialProfit.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             </div>
 
-            {/* R:R Visual Bar */}
+            {/* R:R bar */}
             <div className="space-y-1">
               <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
                 <span>Risk 1R</span>
