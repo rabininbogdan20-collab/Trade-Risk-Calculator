@@ -13,8 +13,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Percent, Target, TrendingDown, Crosshair, RefreshCw, Calculator as CalcIcon } from "lucide-react";
+import { DollarSign, Percent, Target, TrendingDown, Crosshair, RefreshCw, Calculator as CalcIcon, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type TradeDirection = "LONG" | "SHORT";
 
 const formSchema = z.object({
   accountBalance: z.coerce.number().positive("Must be positive"),
@@ -29,15 +31,28 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+function getDirectionError(direction: TradeDirection, entry: number, stop: number, tp: number): string | null {
+  if (direction === "LONG") {
+    if (stop >= entry || tp <= entry) {
+      return "Для LONG стоп должен быть ниже входа, а Take Profit выше входа";
+    }
+  } else {
+    if (stop <= entry || tp >= entry) {
+      return "Для SHORT стоп должен быть выше входа, а Take Profit ниже входа";
+    }
+  }
+  return null;
+}
+
 export function Calculator() {
+  const [direction, setDirection] = useState<TradeDirection>("LONG");
   const [results, setResults] = useState<{
     dollarRisk: number;
     positionSize: number;
     potentialProfit: number;
     riskReward: number;
-    direction: "long" | "short";
   } | null>(null);
-
+  const [directionError, setDirectionError] = useState<string | null>(null);
   const [hasCalculated, setHasCalculated] = useState(false);
 
   const form = useForm<FormValues>({
@@ -54,23 +69,41 @@ export function Calculator() {
   const riskPct = form.watch("riskPercentage");
 
   const onSubmit = (data: FormValues) => {
+    const error = getDirectionError(direction, data.entryPrice, data.stopLoss, data.takeProfit);
+    if (error) {
+      setDirectionError(error);
+      setResults(null);
+      setHasCalculated(true);
+      return;
+    }
+
+    setDirectionError(null);
+
     const dollarRisk = data.accountBalance * (data.riskPercentage / 100);
     const riskPerShare = Math.abs(data.entryPrice - data.stopLoss);
     const positionSize = riskPerShare > 0 ? dollarRisk / riskPerShare : 0;
     const potentialProfit = positionSize * Math.abs(data.takeProfit - data.entryPrice);
     const riskReward = dollarRisk > 0 ? potentialProfit / dollarRisk : 0;
-    const direction = data.takeProfit > data.entryPrice ? "long" : "short";
 
-    setResults({ dollarRisk, positionSize, potentialProfit, riskReward, direction });
+    setResults({ dollarRisk, positionSize, potentialProfit, riskReward });
     setHasCalculated(true);
   };
 
   const handleReset = () => {
     form.reset();
     setResults(null);
+    setDirectionError(null);
     setHasCalculated(false);
   };
 
+  // Re-validate direction when direction toggle changes
+  useEffect(() => {
+    if (hasCalculated) {
+      form.handleSubmit(onSubmit)();
+    }
+  }, [direction]);
+
+  // Live updates after first calculation
   useEffect(() => {
     if (hasCalculated) {
       const subscription = form.watch(() => {
@@ -94,6 +127,36 @@ export function Calculator() {
       <CardContent className="px-4 pb-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+
+            {/* Direction selector */}
+            <div className="flex gap-2" data-testid="direction-selector">
+              <button
+                type="button"
+                data-testid="button-direction-long"
+                onClick={() => setDirection("LONG")}
+                className={cn(
+                  "flex-1 h-9 rounded-lg text-sm font-bold tracking-wider border transition-colors",
+                  direction === "LONG"
+                    ? "bg-green-500/20 border-green-500 text-green-400"
+                    : "bg-transparent border-border text-muted-foreground hover:border-green-500/50 hover:text-green-500/70"
+                )}
+              >
+                LONG
+              </button>
+              <button
+                type="button"
+                data-testid="button-direction-short"
+                onClick={() => setDirection("SHORT")}
+                className={cn(
+                  "flex-1 h-9 rounded-lg text-sm font-bold tracking-wider border transition-colors",
+                  direction === "SHORT"
+                    ? "bg-destructive/20 border-destructive text-destructive"
+                    : "bg-transparent border-border text-muted-foreground hover:border-destructive/50 hover:text-destructive/70"
+                )}
+              >
+                SHORT
+              </button>
+            </div>
 
             {/* Balance + Risk % */}
             <div className="grid grid-cols-2 gap-3">
@@ -218,8 +281,19 @@ export function Calculator() {
           </form>
         </Form>
 
+        {/* Direction mismatch warning */}
+        {directionError && (
+          <div
+            data-testid="direction-error"
+            className="mt-4 flex items-start gap-2 px-3 py-2.5 rounded-lg border text-destructive bg-destructive/10 border-destructive/30 animate-in fade-in duration-300"
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="text-[11px] font-semibold leading-snug">{directionError}</p>
+          </div>
+        )}
+
         {/* Results */}
-        {results && (
+        {results && !directionError && (
           <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="h-px w-full bg-border" />
 
