@@ -160,7 +160,7 @@ export function Calculator() {
                 name="entryPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Entry Price</FormLabel>
+                    <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Цена входа</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Target className="absolute left-3 top-2.5 h-4 w-4 text-primary" />
@@ -210,7 +210,7 @@ export function Calculator() {
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" size="lg" className="w-full font-bold tracking-wide shadow-primary/20 shadow-lg" data-testid="button-calculate">
-                CALCULATE
+                РАССЧИТАТЬ
               </Button>
               <Button type="button" variant="outline" size="lg" onClick={handleReset} data-testid="button-reset">
                 <RefreshCw className="w-4 h-4" />
@@ -225,7 +225,7 @@ export function Calculator() {
             
             <div className="grid grid-cols-2 gap-y-6 gap-x-4">
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Position Size</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Размер позиции</p>
                 <p className="text-3xl font-mono font-bold text-foreground" data-testid="result-position-size">
                   {results.positionSize.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                 </p>
@@ -233,21 +233,21 @@ export function Calculator() {
               </div>
               
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Risk / Reward</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Риск / Прибыль</p>
                 <p className="text-3xl font-mono font-bold text-primary" data-testid="result-risk-reward">
                   1 : {results.riskReward.toFixed(2)}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs uppercase tracking-wider text-destructive font-semibold mb-1">You Risk</p>
+                <p className="text-xs uppercase tracking-wider text-destructive font-semibold mb-1">Вы рискуете</p>
                 <p className="text-2xl font-mono font-bold text-destructive" data-testid="result-dollar-risk">
                   ${results.dollarRisk.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs uppercase tracking-wider text-green-500 font-semibold mb-1">Potential Profit</p>
+                <p className="text-xs uppercase tracking-wider text-green-500 font-semibold mb-1">Потенциальная прибыль</p>
                 <p className="text-2xl font-mono font-bold text-green-500" data-testid="result-potential-profit">
                   ${results.potentialProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
