@@ -1,8 +1,9 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Link } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import Privacy from "@/pages/privacy";
 import { Calculator } from "@/components/Calculator";
 import { useEffect } from "react";
 
@@ -32,7 +33,10 @@ function Home() {
         </ol>
       </div>
       <p className="w-full max-w-md text-center text-[10px] text-muted-foreground/50 leading-snug px-2 pb-1" data-testid="disclaimer">
-        Не является финансовой рекомендацией. Калькулятор помогает рассчитать риск, но решение о сделке принимаете вы.
+        Не является финансовой рекомендацией. Калькулятор помогает рассчитать риск, но решение о сделке принимаете вы.{" "}
+        <Link href="/privacy" className="underline underline-offset-2 hover:text-muted-foreground/70 transition-colors">
+          Политика конфиденциальности
+        </Link>
       </p>
     </div>
   );
@@ -42,6 +46,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/privacy" component={Privacy} />
       <Route component={NotFound} />
     </Switch>
   );
