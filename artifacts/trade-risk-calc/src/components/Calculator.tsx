@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -109,6 +109,9 @@ export function Calculator() {
   const [directionError, setDirectionError] = useState<string | null>(null);
   const [hasCalculated, setHasCalculated] = useState(false);
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
+  // Holds direction parsed from a shared URL so onSubmit can read it
+  // synchronously before React commits the setDirection state update.
+  const pendingDirectionRef = useRef<TradeDirection | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -124,7 +127,9 @@ export function Calculator() {
   const riskPct = form.watch("riskPercentage");
 
   const onSubmit = (data: FormValues) => {
-    const error = getDirectionError(direction, data.entryPrice, data.stopLoss, data.takeProfit);
+    const dir = pendingDirectionRef.current ?? direction;
+    pendingDirectionRef.current = null;
+    const error = getDirectionError(dir, data.entryPrice, data.stopLoss, data.takeProfit);
     if (error) {
       setDirectionError(error);
       setResults(null);
@@ -172,6 +177,9 @@ export function Calculator() {
     setDirection(shared.direction);
     setCurrency(shared.currency);
     form.reset(shared.values);
+    // Set ref before setTimeout so onSubmit reads the correct direction
+    // even before React commits the setDirection state update.
+    pendingDirectionRef.current = shared.direction;
     setTimeout(() => form.handleSubmit(onSubmit)(), 0);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
