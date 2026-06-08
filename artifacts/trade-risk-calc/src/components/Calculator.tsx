@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Percent, Target, TrendingDown, Crosshair, RefreshCw, Calculator as CalcIcon, AlertTriangle } from "lucide-react";
+import { Percent, Target, TrendingDown, Crosshair, RefreshCw, Calculator as CalcIcon, AlertTriangle, Share2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TradeDirection = "LONG" | "SHORT";
@@ -52,6 +52,51 @@ function getDirectionError(
   return null;
 }
 
+function buildShareUrl(
+  direction: TradeDirection,
+  currency: Currency,
+  values: FormValues,
+): string {
+  const params = new URLSearchParams({
+    d: direction,
+    c: currency,
+    b: String(values.accountBalance),
+    r: String(values.riskPercentage),
+    e: String(values.entryPrice),
+    sl: String(values.stopLoss),
+    tp: String(values.takeProfit),
+  });
+  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+}
+
+function parseShareParams(): {
+  direction: TradeDirection;
+  currency: Currency;
+  values: FormValues;
+} | null {
+  const p = new URLSearchParams(window.location.search);
+  const b = p.get("b");
+  const r = p.get("r");
+  const e = p.get("e");
+  const sl = p.get("sl");
+  const tp = p.get("tp");
+  if (!b || !r || !e || !sl || !tp) return null;
+  const direction: TradeDirection = p.get("d") === "SHORT" ? "SHORT" : "LONG";
+  const c = p.get("c") as Currency;
+  const currency: Currency = CURRENCIES.includes(c) ? c : "$";
+  return {
+    direction,
+    currency,
+    values: {
+      accountBalance: parseFloat(b) || 10000,
+      riskPercentage: parseFloat(r) || 1,
+      entryPrice: parseFloat(e) || 0,
+      stopLoss: parseFloat(sl) || 0,
+      takeProfit: parseFloat(tp) || 0,
+    },
+  };
+}
+
 export function Calculator() {
   const [direction, setDirection] = useState<TradeDirection>("LONG");
   const [currency, setCurrency] = useState<Currency>("$");
@@ -63,6 +108,7 @@ export function Calculator() {
   } | null>(null);
   const [directionError, setDirectionError] = useState<string | null>(null);
   const [hasCalculated, setHasCalculated] = useState(false);
+  const [shareState, setShareState] = useState<"idle" | "copied">("idle");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -118,6 +164,36 @@ export function Calculator() {
     const sub = form.watch(() => form.handleSubmit(onSubmit)());
     return () => sub.unsubscribe();
   }, [hasCalculated, form.watch, form.handleSubmit]);
+
+  // Restore state from shared URL on mount
+  useEffect(() => {
+    const shared = parseShareParams();
+    if (!shared) return;
+    setDirection(shared.direction);
+    setCurrency(shared.currency);
+    form.reset(shared.values);
+    setTimeout(() => form.handleSubmit(onSubmit)(), 0);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleShare = async () => {
+    const url = buildShareUrl(direction, currency, form.getValues());
+    const shareData = { title: "RiskMate Trader", url };
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // cancelled or unavailable — fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareState("copied");
+      setTimeout(() => setShareState("idle"), 2000);
+    } catch {
+      // clipboard blocked — silently ignore
+    }
+  };
 
   return (
     <Card className="w-full max-w-md bg-card/50 backdrop-blur-sm border-border shadow-2xl rounded-2xl overflow-hidden">
@@ -354,6 +430,24 @@ export function Calculator() {
                 data-testid="button-calculate"
               >
                 РАССЧИТАТЬ
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleShare}
+                title="Поделиться расчётом"
+                className={cn(
+                  "h-10 px-3 shrink-0 transition-colors",
+                  shareState === "copied" && "border-green-500 text-green-500"
+                )}
+                data-testid="button-share"
+              >
+                {shareState === "copied" ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <Share2 className="w-4 h-4" />
+                )}
               </Button>
               <Button
                 type="button"
