@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.riskmate.trader",
+    "sha256_cert_fingerprints": ["76:1B:99:C4:8A:42:C5:4A:9F:4E:65:3E:CB:56:88:21:1C:F1:F3:36:55:71:6A:FA:9D:07:B0:0E:51:47:45:8D"]
+  }
+}]
